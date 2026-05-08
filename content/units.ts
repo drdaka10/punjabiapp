@@ -14,7 +14,7 @@ export type Exercise =
       cardId: string;
       prompt: string;
       gurmukhi: string;
-      choices: string[]; // english names / sounds
+      choices: string[];
       answer: string;
     }
   | {
@@ -29,9 +29,41 @@ export type Exercise =
       kind: 'listen';
       cardId: string;
       prompt: string;
-      speak: string; // text passed to TTS
-      choices: string[]; // english meanings
+      speak: string;
+      choices: string[];
       answer: string;
+    }
+  | {
+      kind: 'wordBank';
+      cardId: string;
+      prompt: string;
+      questionEnglish: string;
+      bank: string[];
+      answer: string[];
+    }
+  | {
+      kind: 'matchPairs';
+      cardId: string;
+      prompt: string;
+      pairs: { gurmukhi: string; english: string }[];
+    }
+  | {
+      kind: 'fillBlank';
+      cardId: string;
+      prompt: string;
+      before: string;
+      after: string;
+      choices: string[];
+      answer: string;
+    }
+  | {
+      kind: 'typeAnswer';
+      cardId: string;
+      prompt: string;
+      questionGurmukhi?: string;
+      speak?: string;
+      answer: string;
+      acceptableAnswers?: string[];
     };
 
 export type Lesson = {
