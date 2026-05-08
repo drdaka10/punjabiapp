@@ -80,6 +80,7 @@ export default function Home() {
                       crowns={crowns}
                       status={status}
                       offset={lessonNodeOffset(i)}
+                      index={i}
                       onPress={() => router.push(`/lesson/${lesson.id}`)}
                     />
                   );
