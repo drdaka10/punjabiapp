@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { MAX_CROWNS } from '@/lib/gamification';
 import { colors, radius, spacing } from '@/lib/theme';
 
@@ -9,10 +10,18 @@ type Props = {
   crowns: number;
   status: Status;
   offset: number;
+  index: number;
   onPress: () => void;
 };
 
-export function LessonNode({ title, crowns, status, offset, onPress }: Props) {
+export function LessonNode({
+  title,
+  crowns,
+  status,
+  offset,
+  index,
+  onPress,
+}: Props) {
   const locked = status === 'locked';
   const mastered = status === 'mastered';
   const tint = mastered
@@ -22,7 +31,10 @@ export function LessonNode({ title, crowns, status, offset, onPress }: Props) {
     : colors.primary;
 
   return (
-    <View style={[styles.row, { transform: [{ translateX: offset }] }]}>
+    <Animated.View
+      entering={FadeInDown.delay(Math.min(index, 6) * 60).duration(280)}
+      style={[styles.row, { transform: [{ translateX: offset }] }]}
+    >
       <Pressable
         disabled={locked}
         onPress={onPress}
@@ -60,7 +72,7 @@ export function LessonNode({ title, crowns, status, offset, onPress }: Props) {
           ))}
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

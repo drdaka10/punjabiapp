@@ -26,6 +26,7 @@ type Actions = {
     xpEarned: number;
     crownEarned: boolean;
     newStreak: boolean;
+    goalHitNow: boolean;
   };
   resetForTesting: () => void;
 };
@@ -103,17 +104,20 @@ export const useGamification = create<State & Actions>()(
 
         const dailyXpDate = s.dailyXpDate === t ? s.dailyXpDate : t;
         const carriedDailyXp = s.dailyXpDate === t ? s.dailyXp : 0;
+        const newDailyXp = carriedDailyXp + XP_PER_LESSON;
+        const goalHitNow =
+          carriedDailyXp < DAILY_XP_GOAL && newDailyXp >= DAILY_XP_GOAL;
 
         set({
           xp: s.xp + XP_PER_LESSON,
           streakDays,
           lastActiveDate: t,
-          dailyXp: carriedDailyXp + XP_PER_LESSON,
+          dailyXp: newDailyXp,
           dailyXpDate,
           lessonCrowns: { ...s.lessonCrowns, [lessonId]: newCrowns },
         });
 
-        return { xpEarned: XP_PER_LESSON, crownEarned, newStreak };
+        return { xpEarned: XP_PER_LESSON, crownEarned, newStreak, goalHitNow };
       },
 
       resetForTesting: () => set(initialState),

@@ -1,12 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { ExerciseView } from '@/components/ExerciseView';
 import { ProgressBar } from '@/components/ProgressBar';
 import { findLesson } from '@/content/units';
 import { useAuth } from '@/lib/auth';
+import {
+  hapticCelebrate,
+  hapticCorrect,
+  hapticWrong,
+} from '@/lib/feedback';
 import {
   MAX_CROWNS,
   XP_PER_LESSON,
@@ -34,6 +40,8 @@ export default function LessonScreen() {
     xpEarned: number;
     crownEarned: boolean;
     newCrowns: number;
+    newStreak: boolean;
+    goalHitNow: boolean;
   } | null>(null);
 
   if (!lesson) {
@@ -52,7 +60,9 @@ export default function LessonScreen() {
 
     if (correct) {
       setCorrectCount((c) => c + 1);
+      hapticCorrect();
     } else {
+      hapticWrong();
       const stillAlive = loseHeart();
       if (!stillAlive) {
         setOutcome('failed');
@@ -75,8 +85,11 @@ export default function LessonScreen() {
         xpEarned: result.xpEarned,
         crownEarned: result.crownEarned,
         newCrowns,
+        newStreak: result.newStreak,
+        goalHitNow: result.goalHitNow,
       });
       setOutcome('won');
+      hapticCelebrate();
     } else {
       setIndex(index + 1);
     }
@@ -103,11 +116,16 @@ export default function LessonScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.center}>
-          <Text style={styles.celebrateIcon}>
+          <Animated.Text
+            entering={ZoomIn.duration(450)}
+            style={styles.celebrateIcon}
+          >
             {reward.newCrowns >= MAX_CROWNS ? '👑' : '🎉'}
-          </Text>
-          <Text style={styles.heading}>Lesson complete!</Text>
-          <View style={styles.rewardRow}>
+          </Animated.Text>
+          <Animated.Text entering={FadeIn.delay(150)} style={styles.heading}>
+            Lesson complete!
+          </Animated.Text>
+          <Animated.View entering={FadeIn.delay(250)} style={styles.rewardRow}>
             <Reward icon="⭐" value={`+${reward.xpEarned}`} label="XP" />
             <Reward
               icon="✓"
@@ -117,7 +135,21 @@ export default function LessonScreen() {
             {reward.crownEarned && (
               <Reward icon="👑" value={`${reward.newCrowns}`} label="crown" />
             )}
-          </View>
+          </Animated.View>
+
+          {reward.goalHitNow && (
+            <Animated.View entering={FadeIn.delay(450)} style={styles.banner}>
+              <Text style={styles.bannerText}>🎯 Daily goal reached!</Text>
+            </Animated.View>
+          )}
+          {reward.newStreak && (
+            <Animated.View entering={FadeIn.delay(550)} style={styles.banner}>
+              <Text style={styles.bannerText}>
+                🔥 Streak extended — keep it up!
+              </Text>
+            </Animated.View>
+          )}
+
           <Button label="Continue" onPress={() => router.back()} />
         </View>
       </SafeAreaView>
@@ -216,4 +248,14 @@ const styles = StyleSheet.create({
   rewardIcon: { fontSize: 22 },
   rewardValue: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 2 },
   rewardLabel: { fontSize: 11, color: colors.muted, textTransform: 'uppercase' },
+  banner: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    paddingVertical: spacing(1),
+    paddingHorizontal: spacing(1.5),
+    marginBottom: spacing(1),
+  },
+  bannerText: { color: colors.text, fontWeight: '700', textAlign: 'center' },
 });
