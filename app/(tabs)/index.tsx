@@ -1,10 +1,16 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ProgressBar } from '@/components/ProgressBar';
+import {
+  LessonNode,
+  LessonStatus,
+  lessonNodeOffset,
+} from '@/components/LessonNode';
+import { StatusHeader } from '@/components/StatusHeader';
 import { UNITS } from '@/content/units';
 import { useAuth } from '@/lib/auth';
+import { MAX_CROWNS, useGamification } from '@/lib/gamification';
 import { getCompletedLessons } from '@/lib/progress';
 import { colors, radius, spacing } from '@/lib/theme';
 
@@ -12,6 +18,7 @@ export default function Home() {
   const { session } = useAuth();
   const router = useRouter();
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const lessonCrowns = useGamification((s) => s.lessonCrowns);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,42 +29,59 @@ export default function Home() {
     }, [session]),
   );
 
+  const flatLessons = UNITS.flatMap((u) => u.lessons.map((l) => l.id));
+
+  function statusFor(lessonId: string, idx: number): LessonStatus {
+    const crowns = lessonCrowns[lessonId] ?? 0;
+    const isDone = completed.has(lessonId) || crowns > 0;
+    if (crowns >= MAX_CROWNS) return 'mastered';
+    if (idx === 0) return isDone ? 'inProgress' : 'available';
+    const prev = flatLessons[idx - 1];
+    const prevDone = completed.has(prev) || (lessonCrowns[prev] ?? 0) > 0;
+    if (!prevDone) return 'locked';
+    return isDone ? 'inProgress' : 'available';
+  }
+
+  let runningIndex = 0;
+
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.topBar}>
         <Text style={styles.heading}>Sikho</Text>
-        <Text style={styles.subhead}>Pick up where you left off.</Text>
+      </View>
+      <StatusHeader />
 
+      <ScrollView contentContainerStyle={styles.content}>
         {UNITS.map((unit) => {
           const total = unit.lessons.length;
-          const done = unit.lessons.filter((l) => completed.has(l.id)).length;
+          const masteredCount = unit.lessons.filter(
+            (l) => (lessonCrowns[l.id] ?? 0) >= MAX_CROWNS,
+          ).length;
+
           return (
             <View key={unit.id} style={styles.unit}>
-              <View style={styles.unitHeader}>
+              <View style={styles.unitBanner}>
                 <Text style={styles.unitTitle}>{unit.title}</Text>
-                <Text style={styles.unitCount}>{done}/{total}</Text>
+                <Text style={styles.unitDesc}>{unit.description}</Text>
+                <Text style={styles.unitCount}>
+                  {masteredCount}/{total} mastered
+                </Text>
               </View>
-              <Text style={styles.unitDesc}>{unit.description}</Text>
-              <ProgressBar value={total === 0 ? 0 : done / total} />
 
-              <View style={styles.lessonList}>
-                {unit.lessons.map((lesson) => {
-                  const isDone = completed.has(lesson.id);
+              <View style={styles.path}>
+                {unit.lessons.map((lesson, i) => {
+                  const idx = runningIndex++;
+                  const status = statusFor(lesson.id, idx);
+                  const crowns = lessonCrowns[lesson.id] ?? 0;
                   return (
-                    <Pressable
+                    <LessonNode
                       key={lesson.id}
+                      title={lesson.title}
+                      crowns={crowns}
+                      status={status}
+                      offset={lessonNodeOffset(i)}
                       onPress={() => router.push(`/lesson/${lesson.id}`)}
-                      style={({ pressed }) => [
-                        styles.lessonRow,
-                        isDone && styles.lessonRowDone,
-                        pressed && styles.lessonRowPressed,
-                      ]}
-                    >
-                      <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                      <Text style={styles.lessonMeta}>
-                        {isDone ? '✓ Done' : `${lesson.exercises.length} exercises`}
-                      </Text>
-                    </Pressable>
+                    />
                   );
                 })}
               </View>
@@ -71,36 +95,27 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  topBar: {
+    paddingHorizontal: spacing(2),
+    paddingTop: spacing(1),
+  },
+  heading: { fontSize: 28, fontWeight: '800', color: colors.primary },
   content: { padding: spacing(2), paddingBottom: spacing(6) },
-  heading: { fontSize: 32, fontWeight: '800', color: colors.primary },
-  subhead: { color: colors.muted, marginBottom: spacing(2) },
-  unit: {
-    backgroundColor: colors.surface,
+  unit: { marginBottom: spacing(3) },
+  unitBanner: {
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing(2),
-    marginBottom: spacing(2),
+    marginBottom: spacing(1.5),
   },
-  unitHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  unitTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  unitCount: { color: colors.muted, fontSize: 14 },
-  unitDesc: { color: colors.muted, marginVertical: spacing(0.75) },
-  lessonList: { marginTop: spacing(1.5) },
-  lessonRow: {
-    paddingVertical: spacing(1.5),
-    paddingHorizontal: spacing(1.5),
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing(0.75),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  unitTitle: { fontSize: 18, fontWeight: '800', color: colors.primaryText },
+  unitDesc: { color: colors.primaryText, opacity: 0.85, marginTop: 4 },
+  unitCount: {
+    color: colors.primaryText,
+    opacity: 0.85,
+    marginTop: spacing(0.75),
+    fontSize: 13,
+    fontWeight: '600',
   },
-  lessonRowDone: { borderColor: colors.primary, backgroundColor: '#EFF6F1' },
-  lessonRowPressed: { opacity: 0.85 },
-  lessonTitle: { fontSize: 16, color: colors.text, fontWeight: '600' },
-  lessonMeta: { fontSize: 13, color: colors.muted },
+  path: { paddingHorizontal: spacing(2) },
 });
