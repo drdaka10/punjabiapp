@@ -6,7 +6,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Exercise } from '@/content/units';
+import { Exercise, findCard } from '@/content/units';
 import { colors, radius, spacing } from '@/lib/theme';
 import { speak } from '@/lib/tts';
 import { Button } from './Button';
@@ -50,14 +50,16 @@ function ChoiceExercise({
   const [selected, setSelected] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
 
+  const cardTranslit = findCard(exercise.cardId)?.translit;
+
   useEffect(() => {
     setSelected(null);
     setChecked(false);
     if (exercise.kind === 'listen') {
-      const t = setTimeout(() => speak(exercise.speak), 250);
+      const t = setTimeout(() => speak(exercise.speak, cardTranslit), 250);
       return () => clearTimeout(t);
     }
-  }, [exercise]);
+  }, [exercise, cardTranslit]);
 
   const isCorrect = selected === exercise.answer;
 
@@ -69,7 +71,7 @@ function ChoiceExercise({
         <View style={styles.letterCard}>
           <Text style={styles.letterText}>{exercise.gurmukhi}</Text>
           <Pressable
-            onPress={() => speak(exercise.gurmukhi)}
+            onPress={() => speak(exercise.gurmukhi, cardTranslit)}
             style={styles.speakerSmall}
           >
             <Text style={styles.speakerSmallText}>🔊 Hear it</Text>
@@ -81,7 +83,7 @@ function ChoiceExercise({
         <View style={styles.letterCard}>
           <Text style={styles.wordText}>{exercise.questionGurmukhi}</Text>
           <Pressable
-            onPress={() => speak(exercise.questionGurmukhi)}
+            onPress={() => speak(exercise.questionGurmukhi, cardTranslit)}
             style={styles.speakerSmall}
           >
             <Text style={styles.speakerSmallText}>🔊 Hear it</Text>
@@ -91,7 +93,7 @@ function ChoiceExercise({
 
       {exercise.kind === 'listen' && (
         <Pressable
-          onPress={() => speak(exercise.speak)}
+          onPress={() => speak(exercise.speak, cardTranslit)}
           style={styles.speakerLarge}
         >
           <Text style={styles.speakerLargeIcon}>🔊</Text>
@@ -109,7 +111,12 @@ function ChoiceExercise({
             {exercise.after}
           </Text>
           <Pressable
-            onPress={() => speak(`${exercise.before} ${exercise.answer} ${exercise.after}`)}
+            onPress={() =>
+              speak(
+                `${exercise.before} ${exercise.answer} ${exercise.after}`,
+                cardTranslit,
+              )
+            }
             style={styles.speakerSmall}
           >
             <Text style={styles.speakerSmallText}>🔊 Hear full</Text>
@@ -404,14 +411,19 @@ function TypeAnswerExercise({
   const [text, setText] = useState('');
   const [checked, setChecked] = useState(false);
 
+  const cardTranslit = findCard(exercise.cardId)?.translit;
+
   useEffect(() => {
     setText('');
     setChecked(false);
     if (exercise.speak) {
-      const t = setTimeout(() => exercise.speak && speak(exercise.speak), 250);
+      const t = setTimeout(
+        () => exercise.speak && speak(exercise.speak, cardTranslit),
+        250,
+      );
       return () => clearTimeout(t);
     }
-  }, [exercise]);
+  }, [exercise, cardTranslit]);
 
   const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
   const accepted = [exercise.answer, ...(exercise.acceptableAnswers ?? [])].map(
@@ -428,7 +440,10 @@ function TypeAnswerExercise({
           <Text style={styles.wordText}>{exercise.questionGurmukhi}</Text>
           <Pressable
             onPress={() =>
-              speak(exercise.speak ?? exercise.questionGurmukhi ?? '')
+              speak(
+                exercise.speak ?? exercise.questionGurmukhi ?? '',
+                cardTranslit,
+              )
             }
             style={styles.speakerSmall}
           >
@@ -439,7 +454,9 @@ function TypeAnswerExercise({
 
       {!exercise.questionGurmukhi && exercise.speak && (
         <Pressable
-          onPress={() => exercise.speak && speak(exercise.speak)}
+          onPress={() =>
+            exercise.speak && speak(exercise.speak, cardTranslit)
+          }
           style={styles.speakerLarge}
         >
           <Text style={styles.speakerLargeIcon}>🔊</Text>
