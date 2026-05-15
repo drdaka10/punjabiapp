@@ -17,6 +17,7 @@ type State = {
   dailyXp: number;
   dailyXpDate: string | null;
   lessonCrowns: Record<string, number>;
+  dismissedTtsHint: boolean;
 };
 
 type Actions = {
@@ -28,6 +29,7 @@ type Actions = {
     newStreak: boolean;
     goalHitNow: boolean;
   };
+  dismissTtsHint: () => void;
   resetForTesting: () => void;
 };
 
@@ -47,6 +49,7 @@ const initialState: State = {
   dailyXp: 0,
   dailyXpDate: null,
   lessonCrowns: {},
+  dismissedTtsHint: false,
 };
 
 export const useGamification = create<State & Actions>()(
@@ -119,6 +122,8 @@ export const useGamification = create<State & Actions>()(
 
         return { xpEarned: XP_PER_LESSON, crownEarned, newStreak, goalHitNow };
       },
+
+      dismissTtsHint: () => set({ dismissedTtsHint: true }),
 
       resetForTesting: () => set(initialState),
     }),

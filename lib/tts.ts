@@ -69,6 +69,13 @@ export function stop() {
   Speech.stop();
 }
 
+// Force the next speak() call to re-probe available voices. Use this after
+// the user has had a chance to install a voice from device settings.
+export function resetVoiceCache() {
+  resolved = null;
+  resolving = null;
+}
+
 // Diagnostic helper for surfacing voice availability in the UI when we want.
 export async function ttsStatus(): Promise<{
   hasIndicVoice: boolean;

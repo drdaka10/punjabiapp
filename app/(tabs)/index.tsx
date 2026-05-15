@@ -8,6 +8,7 @@ import {
   lessonNodeOffset,
 } from '@/components/LessonNode';
 import { StatusHeader } from '@/components/StatusHeader';
+import { TtsBanner } from '@/components/TtsBanner';
 import { UNITS } from '@/content/units';
 import { useAuth } from '@/lib/auth';
 import { MAX_CROWNS, useGamification } from '@/lib/gamification';
@@ -50,6 +51,7 @@ export default function Home() {
         <Text style={styles.heading}>Sikho</Text>
       </View>
       <StatusHeader />
+      <TtsBanner />
 
       <ScrollView contentContainerStyle={styles.content}>
         {UNITS.map((unit) => {
